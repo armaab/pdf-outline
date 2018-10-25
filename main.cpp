@@ -13,7 +13,7 @@
 
 
 using namespace std;
-static string* unicode_to_char(Unicode *unicode, int len) {
+static string* unicode_to_char(const Unicode *unicode, int len) {
 	static GlobalParams *globalParams = NULL;
 	if (globalParams == NULL) {
 		globalParams = new GlobalParams();
@@ -64,7 +64,7 @@ const char *getPaddingStar(int num)
 	return buf + bufLen - num;
 }
 
-void printOutline(PDFDoc *doc, GooList *items, int depth)
+void printOutline(PDFDoc *doc, const GooList *items, int depth)
 {
 	if (items == NULL)
 		return;
@@ -75,29 +75,32 @@ void printOutline(PDFDoc *doc, GooList *items, int depth)
 		// Get title
 		string *title = unicode_to_char(item->getTitle(), item->getTitleLength());
 
-		// Get destination
-		LinkAction *action = item->getAction();
-		if (action->getKind() != LinkActionKind::actionGoTo)
-			continue;
-		LinkGoTo *actionGoTo = (LinkGoTo *) action;
-		if (!actionGoTo->isOk())
-			continue;
-
-		LinkDest *dest = actionGoTo->getDest();
-		if (dest == NULL) {
-			GooString *namedDest = actionGoTo->getNamedDest();
-			dest = doc->findDest(namedDest);
-		}
-
-		if (dest == NULL || !dest->isOk())
-			continue;
-
 		int page_num = 0;
-		if (dest->isPageRef()) {
-			Ref page_ref = dest->getPageRef();
-			page_num = doc->findPage(page_ref.num, page_ref.gen);
-		} else {
-			page_num = dest->getPageNum();
+
+		// Get destination
+		const LinkAction *action = item->getAction();
+		if (action != nullptr) {
+			if (action->getKind() != LinkActionKind::actionGoTo)
+				continue;
+			LinkGoTo *actionGoTo = (LinkGoTo *) action;
+			if (!actionGoTo->isOk())
+				continue;
+
+			const LinkDest *dest = actionGoTo->getDest();
+			if (dest == NULL) {
+				const GooString *namedDest = actionGoTo->getNamedDest();
+				dest = doc->findDest(namedDest);
+			}
+
+			if (dest == NULL || !dest->isOk())
+				continue;
+
+			if (dest->isPageRef()) {
+				Ref page_ref = dest->getPageRef();
+				page_num = doc->findPage(page_ref.num, page_ref.gen);
+			} else {
+				page_num = dest->getPageNum();
+			}
 		}
 
 		// Print the title and page number
@@ -108,7 +111,7 @@ void printOutline(PDFDoc *doc, GooList *items, int depth)
 			continue;
 
 		item->open();
-		GooList *kids = item->getKids();
+		const GooList *kids = item->getKids();
 		printOutline(doc, kids, depth+1);
 	}
 }
@@ -127,7 +130,7 @@ int main(int argc, char **argv)
 	}
 
 	Outline *outline = doc->getOutline();
-	GooList *items = outline->getItems();
+	const GooList *items = outline->getItems();
 	printOutline(doc, items, 0);
 	delete doc;
 
