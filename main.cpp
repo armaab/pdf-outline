@@ -46,24 +46,6 @@ PDFDoc *OpenDoc(char *filename)
 	return doc;
 }
 
-const char *getPaddingStar(int num)
-{
-	static char *buf = NULL;
-	static int bufLen = -1;
-
-	if (num > bufLen) {
-		if (bufLen > 0)
-			delete[] buf;
-
-		bufLen = num * 2 + 16;
-		buf = new char[bufLen+1];
-		for (int i = 0; i < bufLen; i++)
-			buf[i] = '*';
-		buf[bufLen] = '\0';
-	}
-	return buf + bufLen - num;
-}
-
 void printOutline(PDFDoc *doc, const GooList *items, int depth)
 {
 	if (items == NULL)
@@ -104,7 +86,15 @@ void printOutline(PDFDoc *doc, const GooList *items, int depth)
 		}
 
 		// Print the title and page number
-		std::cout << getPaddingStar(depth) << "!" << *title << " " << page_num << "\n";
+		static constexpr char stars[] = "****************";
+		static constexpr int len_stars = sizeof(stars) / sizeof(*stars) - 1;
+		int d = depth;
+		while (d > len_stars) {
+			cout << stars;
+			d -= len_stars;
+		}
+		cout << (stars + len_stars - d) << "!";
+		cout << *title << " " << page_num << "\n";
 
 		// Print kids
 		if (!item->hasKids())
