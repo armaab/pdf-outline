@@ -1,4 +1,5 @@
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <vector>
 
@@ -13,7 +14,7 @@
 
 
 using namespace std;
-static string* unicode_to_char(const Unicode *unicode, int len) {
+static string unicode_to_char(const Unicode *unicode, int len) {
 	static GlobalParams *globalParams = NULL;
 	if (globalParams == NULL) {
 		globalParams = new GlobalParams();
@@ -27,16 +28,16 @@ static string* unicode_to_char(const Unicode *unicode, int len) {
 		delete enc;
 	}
 
-	GooString gstr;
+	stringstream ss;
 	char buf[8];
 	int i, n;
 
 	for (i = 0; i < len; ++i) {
 		n = uMap->mapUnicode(unicode[i], buf, sizeof(buf));
-		gstr.append(buf, n);
+		ss.write(buf, n);
 	}
 
-	return new string(gstr.getCString());
+	return ss.str();
 }
 
 PDFDoc *OpenDoc(char *filename)
@@ -55,7 +56,7 @@ void printOutline(PDFDoc *doc, const GooList *items, int depth)
 		OutlineItem *item = (OutlineItem *) items->get(i);
 
 		// Get title
-		string *title = unicode_to_char(item->getTitle(), item->getTitleLength());
+		auto title = unicode_to_char(item->getTitle(), item->getTitleLength());
 
 		int page_num = 0;
 
@@ -94,7 +95,7 @@ void printOutline(PDFDoc *doc, const GooList *items, int depth)
 			d -= len_stars;
 		}
 		cout << (stars + len_stars - d) << "!";
-		cout << *title << " " << page_num << "\n";
+		cout << title << " " << page_num << "\n";
 
 		// Print kids
 		if (!item->hasKids())
