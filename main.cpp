@@ -14,6 +14,7 @@
 
 
 using namespace std;
+
 static string unicode_to_char(const Unicode *unicode, int len) {
 	static GlobalParams *globalParams = NULL;
 	if (globalParams == NULL) {
@@ -47,14 +48,11 @@ PDFDoc *OpenDoc(char *filename)
 	return doc;
 }
 
-void printOutline(PDFDoc *doc, const GooList *items, int depth)
+void printOutline(PDFDoc *doc, const vector<OutlineItem*> *items, int depth)
 {
-	if (items == NULL)
-		return;
+	if (items == nullptr) return;
 
-	for (int i = 0; i < items->getLength(); i++) {
-		OutlineItem *item = (OutlineItem *) items->get(i);
-
+	for (OutlineItem *item : *items) {
 		// Get title
 		auto title = unicode_to_char(item->getTitle(), item->getTitleLength());
 
@@ -80,7 +78,7 @@ void printOutline(PDFDoc *doc, const GooList *items, int depth)
 
 			if (dest->isPageRef()) {
 				Ref page_ref = dest->getPageRef();
-				page_num = doc->findPage(page_ref.num, page_ref.gen);
+				page_num = doc->findPage(page_ref);
 			} else {
 				page_num = dest->getPageNum();
 			}
@@ -102,7 +100,7 @@ void printOutline(PDFDoc *doc, const GooList *items, int depth)
 			continue;
 
 		item->open();
-		const GooList *kids = item->getKids();
+		const vector<OutlineItem*> *kids = item->getKids();
 		printOutline(doc, kids, depth+1);
 	}
 }
@@ -121,7 +119,7 @@ int main(int argc, char **argv)
 	}
 
 	Outline *outline = doc->getOutline();
-	const GooList *items = outline->getItems();
+	const vector<OutlineItem*> *items = outline->getItems();
 	printOutline(doc, items, 0);
 	delete doc;
 
