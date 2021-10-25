@@ -12,7 +12,6 @@
 #include <poppler/Link.h>
 #include <poppler/Object.h>
 
-
 using namespace std;
 
 static string unicode_to_char(const Unicode *unicode, int len) {
