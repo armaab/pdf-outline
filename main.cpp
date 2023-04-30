@@ -20,12 +20,9 @@ static string unicode_to_char(const Unicode *unicode, int len) {
 		globalParams = new GlobalParams();
 	}
 
-	static UnicodeMap *uMap = NULL;
+	static const UnicodeMap *uMap = NULL;
 	if (uMap == NULL) {
-		GooString *enc = new GooString("UTF-8");
-		uMap = globalParams->getUnicodeMap(enc);
-		uMap->incRefCnt();
-		delete enc;
+		uMap = globalParams->getUnicodeMap("UTF-8");
 	}
 
 	stringstream ss;
@@ -40,14 +37,7 @@ static string unicode_to_char(const Unicode *unicode, int len) {
 	return ss.str();
 }
 
-PDFDoc *OpenDoc(char *filename)
-{
-	GooString fname(filename);
-	auto doc = PDFDocFactory().createPDFDoc(fname);
-	return doc;
-}
-
-void printOutline(PDFDoc *doc, const vector<OutlineItem*> *items, int depth)
+void printOutline(PDFDoc &doc, const vector<OutlineItem*> *items, int depth)
 {
 	if (items == nullptr) return;
 
@@ -67,9 +57,14 @@ void printOutline(PDFDoc *doc, const vector<OutlineItem*> *items, int depth)
 				continue;
 
 			const LinkDest *dest = actionGoTo->getDest();
+			// For lifetime management if we get a named destination
+			// from the document (which we will then own)
+			unique_ptr<const LinkDest> namedDest;
+
 			if (dest == NULL) {
-				const GooString *namedDest = actionGoTo->getNamedDest();
-				dest = doc->findDest(namedDest);
+				const GooString *namedDestName = actionGoTo->getNamedDest();
+				namedDest = doc.findDest(namedDestName);
+				dest = namedDest.get();
 			}
 
 			if (dest == NULL || !dest->isOk())
@@ -77,7 +72,7 @@ void printOutline(PDFDoc *doc, const vector<OutlineItem*> *items, int depth)
 
 			if (dest->isPageRef()) {
 				Ref page_ref = dest->getPageRef();
-				page_num = doc->findPage(page_ref);
+				page_num = doc.findPage(page_ref);
 			} else {
 				page_num = dest->getPageNum();
 			}
@@ -111,16 +106,15 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	GooString fname(argv[1]);
-	PDFDoc *doc = PDFDocFactory().createPDFDoc(fname);
+	unique_ptr<PDFDoc> doc = PDFDocFactory().createPDFDoc(fname);
+
 	if (!doc->isOk()) {
-		delete doc;
 		exit(1);
 	}
 
 	Outline *outline = doc->getOutline();
 	const vector<OutlineItem*> *items = outline->getItems();
-	printOutline(doc, items, 0);
-	delete doc;
+	printOutline(*doc, items, 0);
 
 	return 0;
 }
