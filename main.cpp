@@ -43,7 +43,8 @@ void printOutline(PDFDoc &doc, const vector<OutlineItem*> *items, int depth)
 
 	for (OutlineItem *item : *items) {
 		// Get title
-		auto title = unicode_to_char(item->getTitle(), item->getTitleLength());
+		const vector<Unicode> &rawTitle = item->getTitle();
+		auto title = unicode_to_char(rawTitle.data(), rawTitle.size());
 
 		int page_num = 0;
 
